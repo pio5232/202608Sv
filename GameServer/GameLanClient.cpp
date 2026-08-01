@@ -1,0 +1,74 @@
+#include "pch.h"
+#include "GameLanClient.h"
+#include "GameServer.h"
+#include "Memory.h"
+#include "GameSystem.h"
+#include "PacketBuilder.h"
+
+
+jh::GameLanClient::GameLanClient() : jh::IocpClient(GAME_LAN_CLIENT_SAVE_FILE_NAME), m_pGameSystem(nullptr)
+{
+	jh_utility::Parser parser;
+
+	parser.LoadFile(GAME_LAN_CLIENT_CONFIG_FILE);
+	parser.SetReadingCategory(GAME_LAN_CATEGORY_NAME);
+
+	WCHAR ip[20];
+	USHORT port;
+	USHORT maxSessionCnt;
+	DWORD concurrentWorkerThreadCount;
+
+	USHORT lingerOnOff;
+	USHORT lingerTime;
+	ULONGLONG timeOut;
+
+	bool succeeded = parser.GetValueWstr(L"serverIp", ip, ARRAY_SIZE(ip));
+	succeeded &= parser.GetValue(L"serverPort", port);
+	succeeded &= parser.GetValue(L"maxSessionCount", maxSessionCnt);
+	succeeded &= parser.GetValue(L"concurrentWorkerThreadCount", concurrentWorkerThreadCount);
+
+	succeeded &= parser.GetValue(L"lingerOnOff", lingerOnOff);
+	succeeded &= parser.GetValue(L"lingerTime", lingerTime);
+	succeeded &= parser.GetValue(L"TimeOut", timeOut);
+
+	parser.CloseFile();
+
+	if (true == succeeded)
+		_LOG(L"ParseInfo", LOG_LEVEL_INFO, L"[GameLanClient] Parse success : [%s]", GAME_LAN_CLIENT_CONFIG_FILE);
+	else
+	{
+		_LOG(L"ParseInfo", LOG_LEVEL_WARNING, L"[GameLanClient] Parse failed : [%s]", GAME_LAN_CLIENT_CONFIG_FILE);
+		jh_utility::CrashDump::Crash();
+	}
+
+	InitClientConfig(ip, port, concurrentWorkerThreadCount, lingerOnOff, lingerTime, timeOut);
+
+	if (false == InitSessionArray(maxSessionCnt))
+	{
+		_LOG(L"ParseInfo", LOG_LEVEL_WARNING, L"[GameLanClient] InitSessionArray failed.");
+		jh_utility::CrashDump::Crash();
+	}
+}
+
+jh::GameLanClient::~GameLanClient()
+{
+}
+
+void jh::GameLanClient::OnRecv(ULONGLONG sessionId, PacketBufferRef packet, USHORT type)
+{
+	GameLanEventPtr lanRequest = jh::MakeShared<GameLanEvent>(sessionId, type, packet, this); // MakeJob(sessionId, type, packet);
+
+	m_pGameSystem->EnqueueLanRequest(lanRequest);
+}
+
+void jh::GameLanClient::OnConnected(ULONGLONG sessionId)
+{
+	_LOG(m_pcwszClientName, LOG_LEVEL_DEBUG, L"[OnConnected] Session connected. SessionID: [0x%016llx]", sessionId);
+
+	PacketBufferRef settingReqPkt = jh::PacketBuilder::BuildGameServerSettingRequestPacket();
+	SendPacket(sessionId, settingReqPkt);
+}
+
+void jh::GameLanClient::OnDisconnected(ULONGLONG sessionId)
+{
+}

@@ -1,0 +1,49 @@
+#pragma once
+#include <unordered_map>
+
+namespace jh
+{
+	class GameWorld;
+	class UserManager 
+	{
+	public:
+
+		UserManager(SendPacketFunc sendPacketFunc) : m_sendPacketFunc(sendPacketFunc) {}
+		UserManager(const UserManager&) = delete;
+
+		~UserManager() 
+		{
+			m_sessionIdToUserUMap.clear();
+			m_userIdToUserUMap.clear();
+			m_entityIdToUserUMap.clear();
+		}
+
+		UserManager& operator=(const UserManager&) = delete;
+
+		UserRef CreateUser(ULONGLONG sessionId, ULONGLONG userId);
+		void RemoveUser(ULONGLONG userId);
+
+		void UnicastFunc(ULONGLONG sessionId, PacketBufferRef& packet);
+		void Broadcast(PacketBufferRef& packet);
+
+		void ReserveUMapSize(USHORT requiredUsers, USHORT maxUsers);
+
+		void RegisterEntityIdToUser(ULONGLONG entityId, UserRef userPtr);
+		void DeleteEntityIdToUser(ULONGLONG entityId);
+		
+		USHORT GetPlayerCount() const	{ return static_cast<USHORT>(m_userIdToUserUMap.size()); }
+		USHORT GetUserCount() const		{ return m_sessionIdToUserUMap.size(); }
+		
+		UserRef GetUserByUserId(ULONGLONG userId);
+		UserRef GetUserBySessionId(ULONGLONG sessionId);
+		UserRef GetUserByEntityId(ULONGLONG entityId);
+	private:
+		SendPacketFunc							m_sendPacketFunc;
+
+		std::unordered_map<ULONGLONG, UserRef>	m_sessionIdToUserUMap;
+		std::unordered_map<ULONGLONG, UserRef>	m_userIdToUserUMap;
+
+		// EntityID
+		std::unordered_map<ULONGLONG, UserRef>	m_entityIdToUserUMap;
+	};
+}

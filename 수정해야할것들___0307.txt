@@ -1,0 +1,1 @@
+지금당장 떠오르는건 모든 스레드들 다 handle로 _beginthreadex 실행

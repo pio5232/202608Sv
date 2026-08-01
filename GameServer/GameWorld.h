@@ -1,0 +1,76 @@
+#pragma once
+#include "Sector.h"
+
+namespace jh
+{
+	class UserManager;
+	class GameWorld
+	{
+	public:
+		
+		GameWorld(class jh::UserManager* userManager, SendPacketFunc sendPacketFunc);
+		~GameWorld();
+
+		void StartGame();
+		void Stop();
+
+		void Update(float deltaTime);
+
+		bool TryEnqueueTimerAction(TimerAction&& action);
+		void ProcessTimerActions();
+
+		void AddEntity(EntityPtr entityPtr);
+		void RemoveEntity(ULONGLONG entityId);
+
+		// 게임 시작 관련 초기화
+		void Init(USHORT total, USHORT gamePlayerCount); // 1. ai+player, 2. player
+
+		void SendPacketAroundSectorNSpectators(const Sector& sector, PacketBufferRef& packet);
+		void SendPacketAroundSectorNSpectators(int sectorX, int sectorZ, PacketBufferRef& packet);
+
+		void CleanUpSpectatorEntities();
+		void SendToSpectatorEntities(PacketBufferRef& packet);
+
+		void SetSpectator(EntityPtr entity);
+		const class SectorManager* GetSectorManagerConst() const { return m_pSectorManager.get(); }
+
+		void ProcessAttack(GamePlayerPtr attacker);
+
+		void CreateAI(class jh::GameWorld* worldPtr);
+		GamePlayerPtr CreateGamePlayer(UserRef userPtr);
+
+		void SendToEntity(ULONGLONG entityId, PacketBufferRef& packetPtr);
+
+		void BroadCast(PacketBufferRef& packetPtr);
+
+	public:
+		void CheckVictoryZoneEntry(GamePlayerPtr gamePlayerPtr);
+		void CheckWinner();
+		void InvalidateWinner(ULONGLONG userId);
+	private:
+		void SetDSCount(USHORT predMaxCnt);
+		bool IsInVictoryZone(const Vector3& pos) const;
+
+		ULONGLONG m_ullExpectedWinnerId;
+		ULONGLONG m_ullExpectedWinTime;
+
+	private:
+		SendPacketFunc									m_sendPacketFunc;
+		char											m_bIsUpdateRunning;
+
+		float											m_fDeltaSum;
+		std::priority_queue<TimerAction>				m_timerActionQueue;
+
+		// [Entity_ID, shared_ptr<Entity>]
+		std::unordered_map<ULONGLONG, EntityPtr>		m_aliveEntityDic;
+
+		// [shared_ptr<Entity>, vectorIndex] - 
+		std::unordered_map<EntityPtr, int>				m_aliveEntityToVectorIdxDic;
+		std::vector<EntityPtr>							m_aliveEntityArr;
+
+		std::vector<std::weak_ptr<jh::Entity>>			m_spectatorEntityArr;
+
+		jh::UniquePtr<class SectorManager>				m_pSectorManager;
+		class UserManager								* m_pUserManager;
+	};
+}
