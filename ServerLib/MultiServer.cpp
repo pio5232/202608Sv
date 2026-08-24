@@ -12,14 +12,9 @@ jh::MultiIocpServer::MultiIocpServer(const WCHAR* serverName) : IocpServer{ serv
 
 
 
-void jh::IocpServer::InitializeServerTasks()
+void jh::MultiIocpServer::InitializeServerTasks()
 {
-	MultiServerConfig* multiServerConfig = static_cast<MultiServerConfig*>(&m_config);
-
-	m_workerExecutor.Run([this]()
-		{
-			ProcessAccept();
-		});
+	MultiServerConfig* multiServerConfig = static_cast<MultiServerConfig*>(GetConfig());
 
 
 	int creationCount = multiServerConfig->m_dwConcurrentWorkerThreadCount * 1.5;
@@ -27,13 +22,13 @@ void jh::IocpServer::InitializeServerTasks()
 	
 	for (int i = 0; i < creationCount; i++)
 	{
-		m_workerExecutor.Run([this]()
+		m_workerExecutor.Run([this, multiServerConfig]()
 			{
 				bool isRunning = true;
 
 				while (isRunning)
 				{
-					g_tlsEndTickCount = jh_utility::GetTimeStamp() + m_config.m_ullWorkerTick;
+					g_tlsEndTickCount = jh_utility::GetTimeStamp() + multiServerConfig->m_ullWorkerTick;
 
 					isRunning = ProcessIO(10);
 

@@ -112,6 +112,11 @@ bool jh::IocpServer::Start()
 		return false;
 	}
 
+	m_workerExecutor.Run([this]()
+		{
+			ProcessAccept();
+		});
+
 	InitializeServerTasks();
 
 	OnStart();

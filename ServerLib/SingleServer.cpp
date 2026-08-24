@@ -12,17 +12,10 @@ jh::SingleIocpServer::SingleIocpServer(const WCHAR* serverName) : IocpServer{ se
 
 void jh::SingleIocpServer::InitializeServerTasks()
 {
-	m_workerExecutor.Run([this]()
-		{
-			ProcessAccept();
-		});
+	ServerConfig* serverConfig = GetConfig();
 
-	int creationCount = m_config.m_dwConcurrentWorkerThreadCount * 1.5;
-
-	m_workerExecutor.Run([this]()
-		{
-
-		});
+	int creationCount = serverConfig->m_dwConcurrentWorkerThreadCount * 1.5;
+;
 	for (int i = 0; i < creationCount; i++)
 	{
 		m_workerExecutor.Run([this]()
