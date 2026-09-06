@@ -6,30 +6,14 @@
 #include "Memory.h"
 
 
-jh::LobbyServer::LobbyServer() : IocpServer{ LOBBY_SERVER_SAVE_FILE_NAME }/*, _canCheckHeartbeat(true)*/
+jh::LobbyServer::LobbyServer() : MultiIocpServer{ LOBBY_SERVER_SAVE_FILE_NAME }/*, _canCheckHeartbeat(true)*/
 {
 	jh_utility::Parser parser;
 
-	parser.LoadFile(UP_DIR(LOBBY_SERVER_CONFIG_FILE));
-	parser.SetReadingCategory(LOBBY_CATEGORY_NAME);
-
-	LobbyServerConfig* config = CreateConfig();
-
-	bool succeeded = parser.GetValueWstr(L"serverIp", config.m_wszIp, ARRAY_SIZE(config.m_wszIp));
-	succeeded &= parser.GetValue(L"serverPort", config.m_usPort);
-	succeeded &= parser.GetValue(L"maxSessionCount", config.m_dwMaxSessionCnt);
-	succeeded &= parser.GetValue(L"concurrentWorkerThreadCount", config.m_dwConcurrentWorkerThreadCount);
-
-	succeeded &= parser.GetValue(L"lingerOnOff", config.m_lingerOption.l_onoff);
-	succeeded &= parser.GetValue(L"lingerTime", config.m_lingerOption.l_linger);
-	succeeded &= parser.GetValue(L"Timeout", config.m_ullTimeoutLimit);
-	succeeded &= parser.GetValue(L"TimeoutCheckInterval", config.m_ullTimeoutCheckInterval);
-	succeeded &= parser.GetValue(L"WorkerTick", config.m_ullWorkerTick);
-
-	parser.SetReadingCategory(LOBBY_DATA_CATEGORY_NAME);
-
-	succeeded &= parser.GetValue(L"maxRoomCount", config.m_usMaxRoomCnt);
-	succeeded &= parser.GetValue(L"maxRoomUserCount", config.m_usMaxRoomUserCnt);
+	const LobbyServerConfig* lobbyCfgPtr = static_cast<const LobbyServerConfig*>(GetConfig());
+	
+	bool succeeded = const_cast<LobbyServerConfig*>(lobbyCfgPtr)->Read(parser, UP_DIR(LOBBY_SERVER_CONFIG_FILE), LOBBY_CATEGORY_NAME);
+	succeeded &= const_cast<LobbyServerConfig*>(lobbyCfgPtr)->ReadOtherCategory(parser, LOBBY_DATA_CATEGORY_NAME);
 
 	parser.CloseFile();
 
@@ -41,16 +25,17 @@ jh::LobbyServer::LobbyServer() : IocpServer{ LOBBY_SERVER_SAVE_FILE_NAME }/*, _c
 		jh_utility::CrashDump::Crash();
 	}
 
-	LoadConfig(config);
-	
-	if (false == InitSessionArray(config.m_dwMaxSessionCnt))
+	if (false == InitSessionArray(lobbyCfgPtr->m_dwMaxSessionCnt))
 	{
 		_LOG(L"ParseInfo", LOG_LEVEL_WARNING, L"[LobbyServer] InitSessionArray failed.");		
 		jh_utility::CrashDump::Crash();
 	}
 
 	m_pLanServer = jh::MakeUnique<jh::LobbyLanServer>();
-	m_pLobbySystem = jh::MakeUnique<jh::LobbySystem>(this, config.m_usMaxRoomCnt, config.m_usMaxRoomUserCnt);
+
+	auto updateHbFunc = [this](ULONGLONG _sessionId, ULONGLONG _time) {this->UpdateHeartbeat(_sessionId, _time); };
+
+	m_pLobbySystem = jh::MakeUnique<jh::LobbySystem>(this, lobbyCfgPtr->m_usMaxRoomCnt, lobbyCfgPtr->m_usMaxRoomUserCnt, updateHbFunc);
 
 	m_pLobbySystem->Init();
 	
@@ -59,12 +44,8 @@ jh::LobbyServer::LobbyServer() : IocpServer{ LOBBY_SERVER_SAVE_FILE_NAME }/*, _c
 	
 }
 
-jh::LobbyServer::~LobbyServer()
-{
 
-}
-
-void jh::LobbyServer::OnStart()
+void jh::LobbyServer::OnStarted()
 {
 	m_pLanServer->Start();
 }
@@ -76,6 +57,12 @@ void jh::LobbyServer::OnStop()
 	m_pLanServer->Stop();
 	
 }
+
+LobbyServerConfig* LobbyServer::CreateConfig() 
+{
+	return static_cast<LobbyServerConfig*>(g_pMemSystem->Alloc(sizeof(LobbyServerConfig)));
+}
+
 void jh::LobbyServer::OnRecv(ULONGLONG sessionId, PacketBufferRef packet, USHORT type)
 {
 	m_pLobbySystem->ProcessPacket(sessionId, type, packet);
@@ -89,7 +76,16 @@ void jh::LobbyServer::OnDisconnected(ULONGLONG sessionId)
 	m_pLobbySystem->DisconnectUser(sessionId);
 }
 
-void jh::LobbyServer::OnWorkerThreadUpdate()
+bool LobbyServer::OnConnectionRequest(const SOCKADDR_IN& clientInfo)
+{
+	return true;
+}
+
+void LobbyServer::OnError(int errCode, WCHAR* cause)
+{
+}
+
+void jh::LobbyServer::OnWorkerThreadUpdateEnd()
 {
 	jh_utility::ThreadExecutor::DistributeReservedJobs();
 
@@ -109,7 +105,7 @@ void jh::LobbyServer::Monitor()
 	wprintf(L" [LAN Server]   Sessions Count : %ld\n", m_pLanServer->GetSessionCount());
 }
 
-void jh::LobbyServer::GetInvalidMsgCnt()
+void jh::LobbyServer::GetInvalidMsgCnt() const
 {
 	m_pLobbySystem->GetInvalidMsgCnt();
 }

@@ -123,7 +123,7 @@
 //	if (false == InitializeServerTasks())
 //		return false;
 //
-//	OnStart();
+//	OnStarted();
 //
 //	return true;
 //}
@@ -1465,7 +1465,7 @@
 //		}
 //	}
 //
-//	OnStart();
+//	OnStarted();
 //
 //	return true;
 //}

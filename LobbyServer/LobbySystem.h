@@ -6,16 +6,16 @@ namespace jh
 	class LobbySystem
 	{
 		using PacketFunc = void(LobbySystem::*)(ULONGLONG, PacketBufferRef&);
-
+		using UpdateHbFuncType = std::function<void(ULONGLONG, ULONGLONG)>;
 	public:
-		LobbySystem(jh::IocpServer* owner, USHORT maxRoomCnt, USHORT maxRoomUserCnt);
+		LobbySystem(jh::IocpServer* owner, USHORT maxRoomCnt, USHORT maxRoomUserCnt, UpdateHbFuncType hbFunc);
 		~LobbySystem();
 
 		void Init();
 		// 로직 스레드의 실행을 종료
 		void Stop();
 
-		void GetInvalidMsgCnt();
+		void GetInvalidMsgCnt() const;
 		void ProcessPacket(ULONGLONG sessionId, USHORT packetType, PacketBufferRef& packet);
 	private:
 		LONGLONG m_invalidLeave = 0;
@@ -41,16 +41,16 @@ namespace jh
 		void HandleGameSettingRequest(ULONGLONG lanSessionId, PacketBufferRef& lanPacket, jh::IocpServer* lanServer);
 		
 	public:
-		void DisconnectUser(ULONGLONG sessionId);
+		void DisconnectUser(ULONGLONG sessionId) const;
 
 	private:
-		std::unordered_map<USHORT, PacketFunc>				m_packetFuncDic;
+		std::unordered_map<USHORT, PacketFunc>		m_packetFuncDic;
 
-		jh::UniquePtr<jh::UserManager>		m_pUserManager;
-		jh::UniquePtr<jh::RoomManager>		m_pRoomManager;
+		jh::UniquePtr<jh::UserManager>				m_pUserManager;
+		jh::UniquePtr<jh::RoomManager>				m_pRoomManager;
 
 		jh::IocpServer								* m_pOwner;
-
-		jh_utility::LockQueue<USHORT>						m_pendingGameRoomList;
+		UpdateHbFuncType							m_updateHeartbeatFunc;
+		jh_utility::LockQueue<USHORT>				m_pendingGameRoomList;
 	};
 }

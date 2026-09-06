@@ -2,6 +2,10 @@
 
 #include <MSWSock.h>
 
+namespace jh_utility
+{
+	class Parser;
+}
 namespace jh
 {
 	/*--------------------
@@ -39,7 +43,8 @@ namespace jh
 
 struct ServerConfig
 {
-	virtual ~ServerConfig() {}
+	virtual ~ServerConfig() = default;
+
 	WCHAR		m_wszIp[IP_STRING_LEN]{};									// ip
 	USHORT		m_usPort;												// 포트 번호
 	DWORD		m_dwMaxSessionCnt;										// 한번에 접속가능한 최대 세션 수
@@ -48,20 +53,21 @@ struct ServerConfig
 	ULONGLONG	m_ullTimeoutLimit;										// HEARTBEAT
 	ULONGLONG	m_ullTimeoutCheckInterval;								// HEARTBEAT 체크 주기
 	// ULONGLONG	m_ullWorkerTick;
+
+	 bool Read(jh_utility::Parser& parser, const WCHAR* fileName, const WCHAR* categoryName);
+	 bool ReadOtherCategory(jh_utility::Parser& parser, const WCHAR* categoryName);
+protected:
+	virtual bool GetMainContent(jh_utility::Parser& parser, const WCHAR* categoryName);
+	virtual bool GetContents(jh_utility::Parser& parser, const WCHAR* categoryName);
 };
 
 
 struct MultiServerConfig : public ServerConfig
 {
-	virtual ~MultiServerConfig() override {}
+	~MultiServerConfig() override = default;
 
 	ULONGLONG m_ullWorkerTick;
-};
 
-struct LobbyServerConfig : MultiServerConfig
-{
-	virtual ~LobbyServerConfig() override {}
-
-	USHORT m_usMaxRoomCnt;
-	USHORT m_usMaxRoomUserCnt;
+protected:
+	bool GetMainContent(jh_utility::Parser & parser, const WCHAR* categoryName) override;
 };

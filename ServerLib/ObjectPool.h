@@ -57,6 +57,6 @@ namespace jh
 	template <typename T, typename... Args>
 	UniquePtr<T> MakeUnique(Args&&... args)
 	{
-		return UniquePtr<T>(ObjectPool<T>::Alloc(std::forward<Args>(args)...));
+		return UniquePtr<T>(ObjectPool<T>::Alloc(std::forward<Args>(args)...), CustomDeleter<T>());
 	}
 }

@@ -72,7 +72,7 @@ const std::wstring jh::NetAddress::GetIpAddress() const
 
 	// 주소체계, &IN_ADDR
 	InetNtopW(AF_INET, &m_sockAddr.sin_addr, ipWstr, sizeof(ipWstr) / sizeof(WCHAR));
-
+	
 	return std::wstring(ipWstr);
 }
 
@@ -99,4 +99,58 @@ USHORT jh::NetAddress::GetPort(SOCKET sock)
 	}
 
 	return ntohs(addr.sin_port);
+}
+
+bool ServerConfig::Read(jh_utility::Parser& parser, const WCHAR* fileName, const WCHAR* categoryName)
+{
+	if (parser.IsFileLoaded())
+		return false;
+
+	if (parser.LoadFile(fileName) == false)
+		return false;
+	
+	//parser.SetReadingCategory(categoryName))
+	//return false;
+
+	return GetMainContent(parser, categoryName);
+}
+
+bool ServerConfig::ReadOtherCategory(jh_utility::Parser& parser, const WCHAR* categoryName)
+{
+	if (parser.IsFileLoaded())
+		return false;
+
+	return GetContents(parser, categoryName);
+}
+
+bool ServerConfig::GetMainContent(jh_utility::Parser& parser, const WCHAR* categoryName)
+{
+	if (parser.SetReadingCategory(categoryName) == false)
+		return false;
+
+	bool succeeded = parser.GetValueWstr(L"serverIp", m_wszIp, ARRAY_SIZE(m_wszIp));
+	succeeded &= parser.GetValue(L"serverPort", m_usPort);
+	succeeded &= parser.GetValue(L"maxSessionCount", m_dwMaxSessionCnt);
+	succeeded &= parser.GetValue(L"concurrentWorkerThreadCount", m_dwConcurrentWorkerThreadCount);
+
+	succeeded &= parser.GetValue(L"lingerOnOff", m_lingerOption.l_onoff);
+	succeeded &= parser.GetValue(L"lingerTime", m_lingerOption.l_linger);
+	succeeded &= parser.GetValue(L"TimeOut", m_ullTimeoutLimit);
+	succeeded &= parser.GetValue(L"TimeoutCheckInterval", m_ullTimeoutCheckInterval);
+
+	return succeeded;
+}
+
+bool ServerConfig::GetContents(jh_utility::Parser& parser, const WCHAR* categoryName)
+{
+	return false;
+}
+
+bool MultiServerConfig::GetMainContent(jh_utility::Parser& parser, const WCHAR* categoryName)
+{
+	bool succeeded = ServerConfig::GetMainContent(parser, categoryName);
+
+	succeeded &= parser.GetValue(L"WorkerTick", m_ullWorkerTick);
+
+	return succeeded;
 }

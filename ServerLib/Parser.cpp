@@ -141,6 +141,7 @@ bool jh_utility::Parser::LoadFile(const WCHAR* file_name)
 			break;
 		}
 	}
+	return true;
 }
 
 
@@ -332,7 +333,7 @@ void jh_utility::Parser::ParseData()
 	}
 }
 
-void jh_utility::Parser::ShowAll()
+void jh_utility::Parser::ShowAll() const
 {
 	for (auto& category : m_categories)
 	{
@@ -348,7 +349,7 @@ void jh_utility::Parser::ShowAll()
 }
 
 
-bool jh_utility::Parser::TryGetCategoryItem(const WCHAR* key, OUT const std::wstring*& wstrValue)
+bool jh_utility::Parser::TryGetCategoryItem(const WCHAR* key, OUT const std::wstring*& wstrValue) const
 {
 	if (nullptr == m_pCurrentReadingCategory)
 	{

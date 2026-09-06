@@ -3,9 +3,7 @@
 namespace jh
 {
 	class LobbyLanServer;
-}
-namespace jh
-{
+
 	class LobbySystem;
 	class LobbyServer;
 	class RoomManager;
@@ -82,3 +80,17 @@ struct LanRequest
 
 using UserRef = std::shared_ptr<class jh::User>;
 using RoomRef = std::shared_ptr<class jh::Room>;
+
+
+struct LobbyServerConfig : MultiServerConfig
+{
+	~LobbyServerConfig() override = default;
+
+	USHORT m_usMaxRoomCnt;
+	USHORT m_usMaxRoomUserCnt;
+
+protected:
+	bool GetMainContent(jh_utility::Parser& parser, const WCHAR* categoryName) override;
+	bool GetContents(jh_utility::Parser& parser, const WCHAR* categoryName) override;
+
+};

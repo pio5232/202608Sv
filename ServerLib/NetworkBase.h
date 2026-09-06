@@ -27,7 +27,7 @@
 //
 //		// 각각의 함수들은 Start() / Stop()가 실행됐을 때
 //		// 상속받은 함수에서 추가적으로 작업할 것들을 여기에 등록하면 된다.
-//		virtual void OnStart() {};
+//		virtual void OnStarted() {};
 //		virtual void OnStop() {};
 //
 //		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo);
@@ -165,7 +165,7 @@
 //		LONGLONG GetDisconnectedCount() const { return m_llDisconnectedCount; }
 //		LONGLONG GetTotalDisconnectedCount() const { return m_llTotalDisconnectCount; }
 //	protected:
-//		virtual void OnStart() {}
+//		virtual void OnStarted() {}
 //		virtual void OnStop() {}
 //		const WCHAR* const m_pcwszClientName;
 //	

@@ -10,31 +10,19 @@ jh::SingleIocpServer::SingleIocpServer(const WCHAR* serverName) : IocpServer{ se
 
 }
 
-void jh::SingleIocpServer::InitializeServerTasks()
+void SingleIocpServer::OnWorkerThreadUpdateBegin()
 {
-	ServerConfig* serverConfig = GetConfig();
-
-	int creationCount = serverConfig->m_dwConcurrentWorkerThreadCount * 1.5;
-;
-	for (int i = 0; i < creationCount; i++)
-	{
-		m_workerExecutor.Run([this]()
-			{
-				bool isRunning = true;
-
-				while (isRunning)
-				{
-					isRunning = ProcessIO(10);
-				}
-			});
-
-	}
-
-	return;
 }
 
+void SingleIocpServer::OnWorkerThreadUpdateEnd()
+{
+}
+
+void SingleIocpServer::OnInitialized()
+{
+}
 
 ServerConfig* jh::SingleIocpServer::CreateConfig()
 {
-	return new ServerConfig{}; 
+	return static_cast<ServerConfig*>(g_pMemSystem->Alloc(sizeof(ServerConfig)));
 }

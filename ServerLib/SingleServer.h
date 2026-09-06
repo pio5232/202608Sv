@@ -14,24 +14,15 @@ namespace jh
 	{
 	public:
 		SingleIocpServer(const WCHAR* serverName);
-		~SingleIocpServer() {}
+		virtual ~SingleIocpServer() override = default;
 
-		// 각각의 함수들은 Start() / Stop()가 실행됐을 때
-		// 상속받은 함수에서 추가적으로 작업할 것들을 여기에 등록하면 된다.
-		virtual void OnStart() override = 0;
-		virtual void OnStop() override = 0;
+		// 기존 IocpServer에서 상속받은 함수들은 재정의하지않고 자식 클래스로 넘김
 
-		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo) override = 0;
-		virtual void OnError(int errCode, WCHAR* cause) override = 0;
+	private:
+		virtual void OnWorkerThreadUpdateBegin() override;
+		virtual void OnWorkerThreadUpdateEnd() override;
+		virtual void OnInitialized() override;
 
-		virtual void OnRecv(ULONGLONG sessionId, PacketBufferRef dataBuffer, USHORT type) override = 0;
-
-		virtual void OnConnected(ULONGLONG sessionId) override = 0;
-		virtual void OnDisconnected(ULONGLONG sessionId) override = 0;
-
-		//virtual void OnWorkerThreadUpdate() = 0;
-
-		virtual void InitializeServerTasks() override;
 		virtual ServerConfig* CreateConfig() override;
 
 	};

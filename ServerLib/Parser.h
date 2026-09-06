@@ -64,9 +64,10 @@ namespace jh_utility
 		void CloseFile();
 
 		bool SetReadingCategory(const WCHAR* categoryName);
+		bool IsFileLoaded() const { return m_pFile != nullptr; }
 
 		template <typename Type>
-		bool GetValue(const WCHAR* key, OUT Type& value)
+		bool GetValue(const WCHAR* key, OUT Type& value) const
 		{
 			const std::wstring* pWstr;
 			if (false == TryGetCategoryItem(key, pWstr))
@@ -94,16 +95,16 @@ namespace jh_utility
 				}
 
 			}
-			catch (const std::exception& exception)
+			catch (const std::exception& e)
 			{
-				wprintf(L"Catch Exception - GetValue Key : [%s]\n", key);
+				wprintf(L"Catch Exception - GetValue Key : [%s], exception : [%s]\n", key, e.what());
 				return false;
 			}
 			return true;
 		}
 
 		template <>
-		bool GetValue(const WCHAR* key, OUT bool& value)
+		bool GetValue(const WCHAR* key, OUT bool& value) const
 		{
 			const std::wstring* pWstr;
 			if (false == TryGetCategoryItem(key, pWstr))
@@ -120,10 +121,10 @@ namespace jh_utility
 		// 문자열
 		bool GetValueWstr(const WCHAR* key, WCHAR* wchBuff, DWORD buffSize);
 
-		void ShowAll();
+		void ShowAll() const;
 
 	private:
-		bool TryGetCategoryItem(const WCHAR* key, OUT const std::wstring*& wstrValue);
+		bool TryGetCategoryItem(const WCHAR* key, OUT const std::wstring*& wstrValue) const;
 		void RegisterCategory();
 
 		void ParseCategory(); // 카테고리 파싱

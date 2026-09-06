@@ -3,25 +3,13 @@
 #include "EchoSystem.h"
 #include "Memory.h"
 
-jh::EchoServer::EchoServer() : IocpServer(ECHO_SERVER_SAVE_FILE_NAME)
+jh::EchoServer::EchoServer() : MultiIocpServer(ECHO_SERVER_SAVE_FILE_NAME)
 {
 	jh_utility::Parser parser;
 
-	parser.LoadFile(UP_DIR(ECHO_SERVER_CONFIG_FILE));
-	parser.SetReadingCategory(ECHO_CATEGORY_NAME);
-
-	MultiServerConfig* config = CreateConfig();
-
-	bool succeeded = parser.GetValueWstr(L"serverIp", config->m_wszIp, ARRAY_SIZE(config->m_wszIp));
-	succeeded &= parser.GetValue(L"serverPort", config->m_usPort);
-	succeeded &= parser.GetValue(L"maxSessionCount", config->m_dwMaxSessionCnt);
-	succeeded &= parser.GetValue(L"concurrentWorkerThreadCount", config->m_dwConcurrentWorkerThreadCount);
-
-	succeeded &= parser.GetValue(L"lingerOnOff", config->m_lingerOption.l_onoff);
-	succeeded &= parser.GetValue(L"lingerTime", config->m_lingerOption.l_linger);
-	succeeded &= parser.GetValue(L"Timeout", config->m_ullTimeoutLimit);
-	succeeded &= parser.GetValue(L"TimeoutCheckInterval", config->m_ullTimeoutCheckInterval);
-	succeeded &= parser.GetValue(L"WorkerTick", config->m_ullWorkerTick);
+	const MultiServerConfig* echoCfg = static_cast<const MultiServerConfig*>(GetConfig());
+	
+	bool succeeded = const_cast<MultiServerConfig*>(echoCfg)->Read(parser, UP_DIR(ECHO_SERVER_CONFIG_FILE), ECHO_CATEGORY_NAME);
 
 	parser.CloseFile();
 
@@ -34,7 +22,7 @@ jh::EchoServer::EchoServer() : IocpServer(ECHO_SERVER_SAVE_FILE_NAME)
 	}
 
 
-	if (false == InitSessionArray(config->m_dwMaxSessionCnt))
+	if (false == InitSessionArray(echoCfg->m_dwMaxSessionCnt))
 	{
 		_LOG(L"ParseInfo", LOG_LEVEL_WARNING, L"[LobbyLanServer] InitSessionArray failed.");
 		jh_utility::CrashDump::Crash();
@@ -44,16 +32,12 @@ jh::EchoServer::EchoServer() : IocpServer(ECHO_SERVER_SAVE_FILE_NAME)
 	//m_pEchoSystem->Init();
 }
 
-jh::EchoServer::~EchoServer()
-{
-}
-
 void jh::EchoServer::Monitor()
 {
 	wprintf(L" [Echo Server] Sessions : %d\n", GetSessionCount());
 }
 
-void jh::EchoServer::OnStart()
+void jh::EchoServer::OnStarted()
 {
 }
 
@@ -97,4 +81,13 @@ void jh::EchoServer::OnDisconnected(ULONGLONG sessionId)
 
 
 	//m_pEchoSystem->EnqueueSystemJob(sessionConnectionEventPtr);
+}
+
+bool EchoServer::OnConnectionRequest(const SOCKADDR_IN& clientInfo)
+{
+	return true;
+}
+
+void EchoServer::OnError(int errCode, WCHAR* cause)
+{
 }

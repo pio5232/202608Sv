@@ -83,17 +83,6 @@ namespace jh
 	class WorldChat;
 }
 
-struct TimerAction
-{
-	ULONGLONG executeTick;
-	Action action;
-
-	const bool operator< (const TimerAction& other) const
-	{
-		return executeTick > other.executeTick;
-	}
-};
-
 
 Vector3 GenerateRandomPos();
 
@@ -204,6 +193,7 @@ struct GameLanEvent
 	jh::IocpClient	* m_pClient;
 };
 
+
 using UserRef = std::shared_ptr<class jh::User>;
 
 using GamePlayerPtr = std::shared_ptr<class jh::GamePlayer>;
@@ -216,3 +206,14 @@ using Action = std::function<void()>;
 using GameLanEventPtr = std::shared_ptr<jh::GameLanEvent>;
 using LogicEventRef = std::shared_ptr<jh::LogicEvent>;
 using SessionConnectionEventRef = std::shared_ptr<jh::SessionConnectionEvent>;
+
+struct TimerAction
+{
+	ULONGLONG executeTick;
+	Action action;
+
+	const bool operator< (const TimerAction& other) const
+	{
+		return executeTick > other.executeTick;
+	}
+};

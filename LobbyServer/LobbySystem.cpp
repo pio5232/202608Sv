@@ -26,9 +26,9 @@ void jh::LobbySystem::Stop()
 {
 }
 
-void jh::LobbySystem::GetInvalidMsgCnt()
+void jh::LobbySystem::GetInvalidMsgCnt() const
 {
-	wprintf(L" [Content] Invliad Leave : %lld\n", m_invalidLeave);
+	wprintf(L" [Content] Invalid Leave : %lld\n", m_invalidLeave);
 	wprintf(L" [Content] Invalid Enter : %lld\n", m_invalidEnter);
 	wprintf(L" [Content] Invalid Chat : %lld\n", m_invalidChat);
 	wprintf(L" [Content] Invalid Make : %lld\n", m_invalidMake);
@@ -36,7 +36,7 @@ void jh::LobbySystem::GetInvalidMsgCnt()
 
 }
 
-jh::LobbySystem::LobbySystem(jh::IocpServer* owner, USHORT maxRoomCnt, USHORT maxRoomUserCnt) : m_pOwner{ owner }, m_pendingGameRoomList{}
+jh::LobbySystem::LobbySystem(jh::IocpServer* owner, USHORT maxRoomCnt, USHORT maxRoomUserCnt, UpdateHbFuncType hbFunc) : m_pOwner{ owner }, m_pendingGameRoomList{}, m_updateHeartbeatFunc{hbFunc}
 {
 	if (nullptr == m_pOwner)
 	{
@@ -64,9 +64,10 @@ jh::LobbySystem::LobbySystem(jh::IocpServer* owner, USHORT maxRoomCnt, USHORT ma
 	m_pRoomManager = jh::MakeUnique<jh::RoomManager>(maxRoomCnt, maxRoomUserCnt, unicastFunc, onGameStartFunc);
 }
 
-jh::LobbySystem::~LobbySystem()
+LobbySystem::~LobbySystem()
 {
 }
+
 
 void jh::LobbySystem::ProcessPacket(ULONGLONG sessionId, USHORT packetType, PacketBufferRef& packet)
 {
@@ -363,7 +364,7 @@ void jh::LobbySystem::HandleEchoPacket(ULONGLONG sessionId, PacketBufferRef& pac
 	return;
 }
 
-void jh::LobbySystem::HandleHeartbeatPacket(ULONGLONG sessionId, PacketBufferRef& packet)
+void jh::LobbySystem::HandleHeartbeatPacket(ULONGLONG sessionId, PacketBufferRef& packet) 
 {
 	PRO_START_AUTO_FUNC;
 
@@ -371,7 +372,7 @@ void jh::LobbySystem::HandleHeartbeatPacket(ULONGLONG sessionId, PacketBufferRef
 
 	*packet >> packetTimeStamp;
 
-	m_pOwner->UpdateHeartbeat(sessionId, packetTimeStamp);
+	m_updateHeartbeatFunc(sessionId, packetTimeStamp);
 
 	return;
 }
@@ -444,7 +445,7 @@ void jh::LobbySystem::HandleGameSettingRequest(ULONGLONG lanSessionId, PacketBuf
 	);
 }
 
-void jh::LobbySystem::DisconnectUser(ULONGLONG sessionId)
+void jh::LobbySystem::DisconnectUser(ULONGLONG sessionId) const
 {
 	PRO_START_AUTO_FUNC;
 

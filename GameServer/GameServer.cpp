@@ -12,23 +12,9 @@ jh::GameServer::GameServer() : jh::IocpServer(GAME_SERVER_SAVE_FILE_NAME)
 {
 	jh_utility::Parser parser;
 
-	parser.LoadFile(UP_DIR(GAME_SERVER_CONFIG_FILE));
-	parser.SetReadingCategory(GAME_CATEGORY_NAME);
+	const ServerConfig* gameCfgPtr = GetConfig();
 
-	ServerConfig* gameServerConfig = CreateConfig();
-
-	bool succeeded = parser.GetValueWstr(L"serverIp", gameServerConfig->m_wszIp, ARRAY_SIZE(gameServerConfig->m_wszIp));
-	succeeded &= parser.GetValue(L"serverPort", gameServerConfig->m_usPort);
-	succeeded &= parser.GetValue(L"maxSessionCount", gameServerConfig->m_dwMaxSessionCnt);
-	succeeded &= parser.GetValue(L"concurrentWorkerThreadCount", gameServerConfig->m_dwConcurrentWorkerThreadCount);
-
-	succeeded &= parser.GetValue(L"lingerOnOff", gameServerConfig->m_lingerOption.l_onoff);
-	succeeded &= parser.GetValue(L"lingerTime", gameServerConfig->m_lingerOption.l_linger);
-	succeeded &= parser.GetValue(L"TimeOut", gameServerConfig->m_ullTimeoutLimit);
-	succeeded &= parser.GetValue(L"TimeoutCheckInterval", gameServerConfig->m_ullTimeoutCheckInterval);
-
-	//succeeded &= parser.GetValue(L"WorkerTick", gameServerConfig->m_ullWorkerTick);
-
+	bool succeeded = const_cast<ServerConfig*>(gameCfgPtr)->Read(parser, UP_DIR(GAME_SERVER_CONFIG_FILE), GAME_CATEGORY_NAME);
 	parser.CloseFile();
 
 	if (true == succeeded)
@@ -47,9 +33,6 @@ jh::GameServer::GameServer() : jh::IocpServer(GAME_SERVER_SAVE_FILE_NAME)
 	m_pGameLanClient->SetGameSystem(m_pGameSystem.get());
 }
 
-jh::GameServer::~GameServer()
-{
-}
 
 bool jh::GameServer::OnConnectionRequest(const SOCKADDR_IN& clientInfo)
 {
@@ -83,7 +66,7 @@ void jh::GameServer::OnDisconnected(ULONGLONG sessionId)
 	m_pGameSystem->EnqueueSessionConnEvent(sessionConnectionEvent);
 }
 
-void jh::GameServer::OnStart()
+void jh::GameServer::OnStarted()
 {
 	m_pGameSystem->Init();
 

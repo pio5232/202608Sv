@@ -16,16 +16,16 @@ namespace jh
 		
 		GameServer();
 
-		~GameServer();
+		~GameServer() override = default;
 
-		virtual bool OnConnectionRequest(const SOCKADDR_IN& clientInfo);
-		virtual void OnError(int errCode, WCHAR* cause);
+		bool OnConnectionRequest (const SOCKADDR_IN& clientInfo) override;
+		void OnError(int errCode, WCHAR* cause) override;
 
 		void OnRecv(ULONGLONG sessionId, PacketBufferRef packet, USHORT type) override;
 		void OnConnected(ULONGLONG sessionId) override;
 		void OnDisconnected(ULONGLONG sessionId) override;
 
-		void OnStart() override;
+		void OnStarted() override;
 		void OnStop() override;
 
 		void Monitor();

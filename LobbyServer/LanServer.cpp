@@ -4,26 +4,14 @@
 #include "LobbySystem.h"
 #include "Memory.h"
 
-jh::LobbyLanServer::LobbyLanServer() : IocpServer(LAN_SAVE_FILE_NAME), m_pLobbyLanSystem(nullptr)
+jh::LobbyLanServer::LobbyLanServer() : jh::MultiIocpServer(LAN_SAVE_FILE_NAME), m_pLobbyLanSystem(nullptr)
 {
 	jh_utility::Parser parser;
-	
-	parser.LoadFile(UP_DIR(LAN_SERVER_CONFIG_FILE));
-	parser.SetReadingCategory(LAN_CATEGORY_NAME);
 
-	ServerConfig config;
+	const ServerConfig* cfgPtr = GetConfig();
 
-	bool succeeded = parser.GetValueWstr(L"serverIp", config.m_wszIp, ARRAY_SIZE(config.m_wszIp));
-	succeeded &= parser.GetValue(L"serverPort", config.m_usPort);
-	succeeded &= parser.GetValue(L"maxSessionCount", config.m_dwMaxSessionCnt);
-	succeeded &= parser.GetValue(L"concurrentWorkerThreadCount", config.m_dwConcurrentWorkerThreadCount);
+	bool succeeded = const_cast<ServerConfig*>(cfgPtr)->Read(parser, UP_DIR(LAN_SERVER_CONFIG_FILE), LAN_CATEGORY_NAME);
 
-	succeeded &= parser.GetValue(L"lingerOnOff", config.m_lingerOption.l_onoff);
-	succeeded &= parser.GetValue(L"lingerTime", config.m_lingerOption.l_linger);
-	succeeded &= parser.GetValue(L"Timeout", config.m_ullTimeoutLimit);
-	succeeded &= parser.GetValue(L"TimeoutCheckInterval", config.m_ullTimeoutCheckInterval);
-	succeeded &= parser.GetValue(L"WorkerTick", config.m_ullWorkerTick);
-	
 	parser.CloseFile();
 
 	if (true == succeeded)
@@ -34,20 +22,14 @@ jh::LobbyLanServer::LobbyLanServer() : IocpServer(LAN_SAVE_FILE_NAME), m_pLobbyL
 		jh_utility::CrashDump::Crash();
 	}
 
-	LoadConfig(config);
 	
-	if (false == InitSessionArray(config.m_dwMaxSessionCnt))
+	if (false == InitSessionArray(cfgPtr->m_dwMaxSessionCnt))
 	{
 		_LOG(L"ParseInfo", LOG_LEVEL_WARNING, L"[LobbyLanServer] InitSessionArray failed.");	
 		jh_utility::CrashDump::Crash();
 	}
 
 	m_pLobbyLanSystem = jh::MakeUnique<jh::LobbyLanSystem>(this);
-}
-
-jh::LobbyLanServer::~LobbyLanServer()
-{
-
 }
 
 bool jh::LobbyLanServer::OnConnectionRequest(const SOCKADDR_IN& clientInfo)
@@ -78,9 +60,6 @@ void jh::LobbyLanServer::Init()
 	m_pLobbyLanSystem->Init();
 }
 
-void jh::LobbyLanServer::OnStop()
-{
-}
 
 void jh::LobbyLanServer::SetLobbySystem(jh::LobbySystem* lobbySystem)
 {

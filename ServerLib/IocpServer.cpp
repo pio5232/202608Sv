@@ -1,5 +1,4 @@
 #include "LibraryPch.h"
-#include <MSWSock.h>
 #include <Windows.h>
 #include <conio.h>
 #include "NetworkBase.h"
@@ -28,6 +27,12 @@ jh::IocpServer::~IocpServer()
 	{
 		delete[] m_pSessionArray;
 		m_pSessionArray = nullptr;
+	}
+	
+	if (m_pConfig != nullptr)
+	{
+		g_pMemSystem->Free(m_pConfig);
+		m_pConfig = nullptr;
 	}
 }
 
@@ -119,7 +124,7 @@ bool jh::IocpServer::Start()
 
 	InitializeServerTasks();
 
-	OnStart();
+	OnStarted();
 
 	return true;
 }
@@ -292,6 +297,30 @@ jh::Session* jh::IocpServer::TryAcquireSession(ULONGLONG sessionId, const WCHAR*
 	return sessionPtr;
 }
 
+void IocpServer::InitializeServerTasks()
+{
+	const ServerConfig* cfgPtr = GetConfig();
+	int creationCount = static_cast<int>(cfgPtr->m_dwConcurrentWorkerThreadCount * 1.5);
+	for (int i = 0; i < creationCount; i++)
+	{
+		m_workerExecutor.Run([this]()
+			{
+				bool isRunning = true;
+
+				while (isRunning)
+				{
+					OnWorkerThreadUpdateBegin();
+
+					isRunning = ProcessIO(10);
+
+					OnWorkerThreadUpdateEnd();
+				}
+			});
+	}
+
+	OnInitialized();
+}
+
 bool jh::IocpServer::ProcessIO(DWORD timeout)
 {
 	LPOVERLAPPED lpOverlapped = nullptr;
@@ -357,7 +386,7 @@ void jh::IocpServer::ProcessRecv(Session* sessionPtr, DWORD transferredBytes)
 
 	while (1)
 	{
-		int bufferSize = sessionPtr->m_recvBuffer.GetUseSize();
+		const int bufferSize = sessionPtr->m_recvBuffer.GetUseSize();
 
 		// packetheader보다 작은 상태
 
@@ -423,7 +452,7 @@ void jh::IocpServer::ProcessRecv(Session* sessionPtr, DWORD transferredBytes)
 
 void jh::IocpServer::ProcessSend(Session* sessionPtr, DWORD transferredBytes)
 {
-	size_t pendingCnt = sessionPtr->m_sendOverlapped.m_pendingList.size();
+	const LONG pendingCnt = sessionPtr->m_sendOverlapped.m_pendingList.size();
 
 	InterlockedAdd(&m_lSendCount, pendingCnt);
 
@@ -560,7 +589,7 @@ void jh::IocpServer::PostSend(Session* sessionPtr)
 
 	sessionPtr->m_sendQ.Swap(tempQ);
 
-	int popCount = tempQ.size();
+	const int popCount = tempQ.size();
 
 	while (tempQ.size() > 0)
 	{
@@ -765,7 +794,7 @@ void jh::IocpServer::ProcessAccept()
 	{
 		SOCKADDR_IN clientInfo{};
 		int infoSize = sizeof(clientInfo);
-		SOCKET clientSock = accept(m_listenSock, (SOCKADDR*)&clientInfo, &infoSize);
+		SOCKET clientSock = accept(m_listenSock, reinterpret_cast<SOCKADDR*>(&clientInfo), &infoSize);
 
 		// Accept 종료
 		if (clientSock == INVALID_SOCKET)
@@ -862,7 +891,7 @@ jh::Session* jh::IocpServer::CreateSession(SOCKET sock, const SOCKADDR_IN* pSock
 	return sessionPtr;
 }
 
-ServerConfig* jh::IocpServer::GetConfig()
+const ServerConfig* jh::IocpServer::GetConfig()
 {
 	if (nullptr != m_pConfig)
 		return m_pConfig;

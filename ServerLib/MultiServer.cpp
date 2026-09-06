@@ -10,36 +10,12 @@ jh::MultiIocpServer::MultiIocpServer(const WCHAR* serverName) : IocpServer{ serv
 	m_pJobQueue = jh::MakeShared<JobQueue>();
 }
 
-
-
-void jh::MultiIocpServer::InitializeServerTasks()
+void MultiIocpServer::OnStarted()
 {
-	MultiServerConfig* multiServerConfig = static_cast<MultiServerConfig*>(GetConfig());
+}
 
-
-	int creationCount = multiServerConfig->m_dwConcurrentWorkerThreadCount * 1.5;
-
-	
-	for (int i = 0; i < creationCount; i++)
-	{
-		m_workerExecutor.Run([this, multiServerConfig]()
-			{
-				bool isRunning = true;
-
-				while (isRunning)
-				{
-					g_tlsEndTickCount = jh_utility::GetTimeStamp() + multiServerConfig->m_ullWorkerTick;
-
-					isRunning = ProcessIO(10);
-
-					OnWorkerThreadUpdate();
-				}
-			});
-	}
-	m_pJobQueue->DoTimer(m_config.m_ullTimeoutCheckInterval, [this]() {this->OnHeartbeatTimer(); });
-	
-
-	return;
+void MultiIocpServer::OnStop()
+{
 }
 
 
@@ -52,9 +28,25 @@ void jh::MultiIocpServer::OnHeartbeatTimer()
 	m_pJobQueue->DoTimer(checkInterval, [this]() {this->OnHeartbeatTimer(); });
 }
 
+void MultiIocpServer::OnWorkerThreadUpdateBegin()
+{
+	const MultiServerConfig* multiCfgPtr = static_cast<const MultiServerConfig*>(GetConfig());
+	g_tlsEndTickCount = jh_utility::GetTimeStamp() + multiCfgPtr->m_ullWorkerTick;
+}
 
+void MultiIocpServer::OnWorkerThreadUpdateEnd()
+{
+	
+}
+
+void MultiIocpServer::OnInitialized()
+{
+	const MultiServerConfig* multiCfgPtr = static_cast<const MultiServerConfig*>(GetConfig());
+
+	m_pJobQueue->DoTimer(multiCfgPtr->m_ullTimeoutCheckInterval, [this]() {this->OnHeartbeatTimer(); });
+}
 
 MultiServerConfig* jh::MultiIocpServer::CreateConfig()
 {
-	return new MultiServerConfig{};
+	return static_cast<MultiServerConfig*>(g_pMemSystem->Alloc((sizeof(MultiServerConfig))));
 }
