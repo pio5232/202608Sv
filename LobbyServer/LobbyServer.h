@@ -13,7 +13,7 @@ namespace jh
     {
     public:
         LobbyServer();
-        ~LobbyServer() override = default;
+        ~LobbyServer() override;
         void OnRecv(ULONGLONG sessionId, PacketBufferRef packet, USHORT type) override;
         void OnConnected(ULONGLONG sessionId) override;
         void OnDisconnected(ULONGLONG sessionId) override;

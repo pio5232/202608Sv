@@ -44,6 +44,7 @@ jh::LobbyServer::LobbyServer() : MultiIocpServer{ LOBBY_SERVER_SAVE_FILE_NAME }/
 	
 }
 
+jh::LobbyServer::~LobbyServer() = default;
 
 void jh::LobbyServer::OnStarted()
 {

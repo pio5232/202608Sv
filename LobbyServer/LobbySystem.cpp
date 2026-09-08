@@ -64,7 +64,7 @@ jh::LobbySystem::LobbySystem(jh::IocpServer* owner, USHORT maxRoomCnt, USHORT ma
 	m_pRoomManager = jh::MakeUnique<jh::RoomManager>(maxRoomCnt, maxRoomUserCnt, unicastFunc, onGameStartFunc);
 }
 
-LobbySystem::~LobbySystem()
+jh::LobbySystem::~LobbySystem()
 {
 }
 
